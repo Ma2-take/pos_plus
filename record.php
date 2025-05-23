@@ -21,18 +21,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['items'])) {
             $totalAmount += $amount;
         }
 
-        // sales テーブルに合計金額と日時を保存
+        // sales テーブルに合計金額を保存
         $stmtSale = $pdo->prepare("INSERT INTO sales (amount) VALUES (?)");
         $stmtSale->execute([$totalAmount]);
         $saleId = $pdo->lastInsertId();
 
-        // sale_items を登録
-        $stmtItem = $pdo->prepare(
-            "INSERT INTO sale_items (sale_id, product_id, quantity, price, amount) VALUES (?, ?, ?, ?, ?)"
-        );
+        // sale_items に各商品登録
+        $stmtItem = $pdo->prepare("
+            INSERT INTO sale_items (sale_id, product_id, quantity, price, amount)
+            VALUES (?, ?, ?, ?, ?)
+        ");
 
         foreach ($items as $item) {
-            $productId = intval($item['id']);
+            $productId = ($item['id'] == 0) ? null : intval($item['id']); // 自由金額は null
             $quantity = intval($item['quantity']);
             $price = intval($item['price']);
             $amount = $quantity * $price;

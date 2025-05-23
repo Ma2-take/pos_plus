@@ -3,12 +3,12 @@ require 'db.php';
 
 // sales と sale_items、products を結合して取得
 $stmt = $pdo->query(
-  "SELECT s.id AS sale_id, s.recorded_at, 
-          p.name AS product_name, p.category, 
+  "SELECT s.id AS sale_id, s.recorded_at, s.amount AS sale_amount,
+          p.name AS product_name, p.category,
           si.quantity, si.price, si.amount
    FROM sales s
    JOIN sale_items si ON s.id = si.sale_id
-   JOIN products p ON p.id = si.product_id
+   LEFT JOIN products p ON p.id = si.product_id
    ORDER BY s.recorded_at DESC, s.id DESC"
 );
 $saleDetails = $stmt->fetchAll();
@@ -17,6 +17,7 @@ $saleDetails = $stmt->fetchAll();
 $sales = [];
 foreach ($saleDetails as $row) {
     $sales[$row['sale_id']]['recorded_at'] = $row['recorded_at'];
+    $sales[$row['sale_id']]['amount'] = $row['sale_amount'];
     $sales[$row['sale_id']]['items'][] = $row;
 }
 ?>
@@ -48,25 +49,24 @@ foreach ($saleDetails as $row) {
               </tr>
             </thead>
             <tbody>
-              <?php 
-              $total = 0;
-              foreach ($sale['items'] as $item): 
-                $subtotal = $item['amount'];
-                $total += $subtotal;
-              ?>
+              <?php foreach ($sale['items'] as $item): ?>
                 <tr class="border-t">
-                  <td class="py-1 px-2"><?= htmlspecialchars($item['product_name']) ?></td>
-                  <td class="py-1 px-2"><?= htmlspecialchars($item['category']) ?></td>
+                  <td class="py-1 px-2">
+                    <?= htmlspecialchars($item['product_name'] ?? '自由金額') ?>
+                  </td>
+                  <td class="py-1 px-2">
+                    <?= htmlspecialchars($item['category'] ?? '-') ?>
+                  </td>
                   <td class="py-1 px-2 text-right">¥<?= number_format($item['price']) ?></td>
                   <td class="py-1 px-2 text-right"><?= $item['quantity'] ?></td>
-                  <td class="py-1 px-2 text-right">¥<?= number_format($subtotal) ?></td>
+                  <td class="py-1 px-2 text-right">¥<?= number_format($item['amount']) ?></td>
                 </tr>
               <?php endforeach; ?>
             </tbody>
             <tfoot>
               <tr class="bg-gray-100 font-bold">
                 <td colspan="4" class="py-1 px-2 text-right">合計</td>
-                <td class="py-1 px-2 text-right">¥<?= number_format($total) ?></td>
+                <td class="py-1 px-2 text-right">¥<?= number_format($sale['amount']) ?></td>
               </tr>
             </tfoot>
           </table>
